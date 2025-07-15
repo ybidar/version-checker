@@ -1,0 +1,22 @@
+name: Check OS Version Updates
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build and Run
+        run: mvn compile exec:java -Dexec.mainClass="com.example.versionchecker.VersionChecker"
