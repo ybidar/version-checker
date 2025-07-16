@@ -1,4 +1,4 @@
-git name: Check OS Version Updates
+name: Check OS Version Updates
 
 on:
   schedule:
