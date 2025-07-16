@@ -1,8 +1,9 @@
 
-package com.example.versionchecker;
+package com.yb.versionchecker;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.*;
+import java.util.List;
 
 public class VersionChecker {
 
@@ -12,10 +13,11 @@ public class VersionChecker {
         ObjectMapper mapper = new ObjectMapper();
         Path path = Paths.get(STATE_FILE);
         VersionInfo previous = mapper.readValue(path.toFile(), VersionInfo.class);
-        VersionInfo latest = WebScraper.fetchLatestVersions();
+        VersionInfo latest = WebScraper.fetchLatestVersions();;
 
-        if (latest.isDifferent(previous)) {
-           //Notifier.sendNotification(latest);
+
+            Notifier.sendNotification(latest,previous);
+            if(latest.isDifferent(previous)){
             mapper.writeValue(path.toFile(), latest);
             System.out.println("version change.");
         } else {
