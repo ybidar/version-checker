@@ -32,7 +32,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.1.0</version>
         <configuration>
-          <mainClass>com.example.versionchecker.VersionChecker</mainClass>
+          <mainClass>com.yb.versionchecker.VersionChecker</mainClass>
         </configuration>
       </plugin>
     </plugins>

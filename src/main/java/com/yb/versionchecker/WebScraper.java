@@ -1,5 +1,5 @@
 
-package com.example.versionchecker;
+package com.yb.versionchecker;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
