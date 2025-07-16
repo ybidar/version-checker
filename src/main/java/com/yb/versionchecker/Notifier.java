@@ -20,7 +20,7 @@ public class Notifier {
         );
 
         StringBuilder body = new StringBuilder();
-        if(newVersion.isDifferent(oldVersion)){
+        if(!newVersion.isDifferent(oldVersion)){
             body.append("There are no new updates at this time.");
         }else {
             body.append("OS Version Update Detected:\n\n");
