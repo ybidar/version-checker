@@ -1,40 +1,22 @@
 
 package com.yb.versionchecker;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javax.mail.*;
 import javax.mail.internet.*;
-import java.nio.file.*;
+import java.io.File;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Notifier {
-
-    public static void sendNotification(VersionInfo newVersion, VersionInfo oldVersion) throws Exception {
+    private static final Logger logger = AppLogger.getLogger();
+    private static final String RECIPIENTS_JSON_PATH = "src/main/resources/recipients.json";
+    public static void sendNotification(String emailBody, String notificationGroup) throws Exception {
         String username = System.getenv("EMAIL_USERNAME");
         String password = System.getenv("EMAIL_PASSWORD");
-        ObjectMapper mapper = new ObjectMapper();
-        List<String> recipients;
-        recipients = mapper.readValue(
-                Paths.get("src/main/resources/recipients.json").toFile(),
-                List.class
-        );
-
-        StringBuilder body = new StringBuilder();
-        if(!newVersion.isDifferent(oldVersion)){
-            body.append("There are no new updates at this time.");
-        }else {
-            body.append("OS Version Update Detected:\n\n");
-            if (!newVersion.ios.equals(oldVersion.ios)) {
-                body.append("iOS: ").append(oldVersion.ios).append(" ➡ ").append(newVersion.ios).append("\n");
-            }
-            if (!newVersion.ipados.equals(oldVersion.ipados)) {
-                body.append("iPadOS: ").append(oldVersion.ipados).append(" ➡ ").append(newVersion.ipados).append("\n");
-            }
-            if (!newVersion.android.equals(oldVersion.android)) {
-                body.append("Android: ").append(oldVersion.android).append(" ➡ ").append(newVersion.android).append("\n");
-            }
-        }
-
+        logger.log(Level.FINE,"Send mail called with:"+emailBody+"->"+notificationGroup);
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
@@ -48,14 +30,50 @@ public class Notifier {
                 }
             });
 
+        List<String> recipients = (notificationGroup.equalsIgnoreCase("debug")) ? getDebugRecipients() : getUpdateRecipients() ;
+
         Message message = new MimeMessage(session);
         message.setFrom(new InternetAddress("ybtest003@gmail.com"));
         for (String recipient : recipients) {
             message.addRecipient(Message.RecipientType.TO, new InternetAddress(recipient));
         }
         message.setSubject("OS Version Update Notification");
-        message.setText(body.toString());
+        message.setText(emailBody);
 
         Transport.send(message);
+        logger.log(Level.FINE,"Send mail ended with:"+emailBody+"->"+recipients.toString());
+    }
+
+    public static List<String> getDebugRecipients() {
+        return getRecipientsByKey("debug");
+    }
+
+    public static List<String> getUpdateRecipients() {
+        Set<String> recipients = new HashSet<>();
+        recipients.addAll(getRecipientsByKey("updates_only"));
+        recipients.addAll(getRecipientsByKey("debug"));
+        return new ArrayList<>(recipients);
+    }
+
+    private static List<String> getRecipientsByKey(String key) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(new File(RECIPIENTS_JSON_PATH));
+            JsonNode arrayNode = root.get(key);
+            List<String> result = new ArrayList<>();
+
+            if (arrayNode != null && arrayNode.isArray()) {
+                for (JsonNode email : arrayNode) {
+                    result.add(email.asText());
+                }
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            logger.log(Level.SEVERE,"Exception in Notifier class",e);
+            return new ArrayList<>();
+        }
     }
 }

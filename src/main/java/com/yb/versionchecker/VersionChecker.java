@@ -1,27 +1,46 @@
 
 package com.yb.versionchecker;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.file.*;
-import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static com.yb.versionchecker.VersionInfo.updateVersionInfo;
 
 public class VersionChecker {
+    private static final Logger logger = AppLogger.getLogger();
 
-    private static final String STATE_FILE = "src/main/resources/version_state.json";
 
     public static void main(String[] args) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        Path path = Paths.get(STATE_FILE);
-        VersionInfo previous = mapper.readValue(path.toFile(), VersionInfo.class);
+        VersionInfo previous = VersionInfo.getCurrentVersions();
         VersionInfo latest = WebScraper.fetchLatestVersions();;
 
-
-            Notifier.sendNotification(latest,previous);
-            if(latest.isDifferent(previous)){
-            mapper.writeValue(path.toFile(), latest);
-            System.out.println("version change.");
+        if(latest.isDifferent(previous)){
+            updateVersionInfo(latest);
+            logger.log(Level.INFO,"New Version Identified");
         } else {
-            System.out.println("No version change.");
+            logger.log(Level.INFO,"No version change.");
         }
+
+        Notifier.sendNotification(getNotificationMessage(previous,latest),"updates");
+    }
+
+    public static String getNotificationMessage(VersionInfo oldVersion, VersionInfo newVersion){
+        StringBuilder emailBody = new StringBuilder();
+        if(!newVersion.isDifferent(oldVersion)){
+            emailBody.append("There are no new updates at this time.");
+        }else {
+            emailBody.append("New version updates detected:\n\n");
+
+            Map<String, String> changes = newVersion.getChangedOSes(oldVersion);
+            for (Map.Entry<String, String> entry : changes.entrySet()) {
+                emailBody.append(entry.getKey().toUpperCase())
+                        .append(": ")
+                        .append(entry.getValue())
+                        .append("\n");
+            }
+        }
+        return emailBody.toString();
     }
 }
