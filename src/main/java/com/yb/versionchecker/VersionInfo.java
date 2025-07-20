@@ -1,31 +1,74 @@
 
 package com.yb.versionchecker;
 
-import java.util.ArrayList;
-import java.util.List;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.logging.Logger;
 
 public class VersionInfo {
-    public String ios;
-    public String ipados;
-    public String android;
 
-    public VersionInfo() {}
+    private final Map<String, String> osVersions = new HashMap<>();
 
-    public VersionInfo(String ios, String ipados, String android) {
-        this.ios = ios;
-        this.ipados = ipados;
-        this.android = android;
+    private static final String STATE_FILE = "src/main/resources/version_state.json";
+    private static final Logger logger = AppLogger.getLogger();
+
+    private Map<String, String> allVersions;
+
+    public Map<String, String> getAllVersions() {
+        return allVersions;
+    }
+
+    public void setAllVersions(Map<String, String> allVersions) {
+        this.allVersions = allVersions;
+    }
+
+    public void setVersion(String os, String version) {
+        if(allVersions==null)
+            allVersions=new HashMap<>();
+        this.allVersions.put(os,version);
+    }
+    public String getVersion(String os) {
+        return osVersions.get(os.toLowerCase());
+    }
+    public Set<String> getAllOSes() {
+        return osVersions.keySet();
     }
 
     public boolean isDifferent(VersionInfo other) {
-        return !this.ios.equals(other.ios) || !this.ipados.equals(other.ipados) || !this.android.equals(other.android);
+        if (other == null || other.allVersions == null) return true;
+        for (String os : allVersions.keySet()) {
+            if (!Objects.equals(allVersions.get(os), other.allVersions.get(os))) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    public List<String> getChangedOS(VersionInfo other) {
-        List<String> changed = new ArrayList<>();
-        if (!this.ios.equals(other.ios)) changed.add("iOS");
-        if (!this.ipados.equals(other.ipados)) changed.add("iPadOS");
-        if (!this.android.equals(other.android)) changed.add("Android");
+    public Map<String, String> getChangedOSes(VersionInfo other) {
+        Map<String, String> changed = new HashMap<>();
+        for (String os : allVersions.keySet()) {
+            String oldVersion = other.allVersions.get(os);
+            String newVersion = allVersions.get(os);
+            if (!Objects.equals(oldVersion, newVersion)) {
+                changed.put(os, newVersion);
+            }
+        }
         return changed;
+    }
+
+    public static VersionInfo getCurrentVersions() throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        Path path = Paths.get(STATE_FILE);
+        return mapper.readValue(path.toFile(), VersionInfo.class);
+    }
+
+    public static void updateVersionInfo(VersionInfo latest) throws IOException {
+        ObjectMapper mapper = new ObjectMapper();
+        Path path = Paths.get(STATE_FILE);
+        mapper.writeValue(path.toFile(), latest);
     }
 }

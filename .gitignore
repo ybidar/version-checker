@@ -1,0 +1,9 @@
+# Log files
+/logs/
+
+# Module files
+version-checker.iml
+.idea/modules.xml
+
+# Output files
+/target

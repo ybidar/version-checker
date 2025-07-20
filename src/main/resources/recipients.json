@@ -1,4 +1,8 @@
-[
-  "yashinbidar@gmail.com",
-  "ybtest003@gmail.com"
-]
+{
+  "updates_only": [
+    "yashinbidar@gmail.com"
+  ],
+  "debug": [
+    "ybtest003@gmail.com"
+  ]
+}
