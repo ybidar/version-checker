@@ -23,7 +23,7 @@ public class WebScraper {
             String viOS = getLatestiOSVersion();
             String viPadOS = getLatestiPadOSVersion();
             String vAndroid = getLatestAndroidVersion();
-            String android = "";
+            String android = getLatestAndroidBetaVersion();
             String pixelqprbeta = getLatestPixelBetaVersion();
             String pixelpatch = getLatestPixelMonthlyPatchVersion();
             String samsungpatch = getLatestSamsungPatch();
@@ -35,6 +35,7 @@ public class WebScraper {
             latestVersions.setVersion("pixelpatch",pixelpatch);
             latestVersions.setVersion("samsungpatch",samsungpatch);
             latestVersions.setVersion("pixelqprbeta",pixelqprbeta);
+            latestVersions.setVersion("androidbeta",android);
 
             return latestVersions;
 
@@ -162,13 +163,16 @@ public class WebScraper {
             while (sibling != null) {
                 logger.log(Level.FINE,"Main Header found for Pixel QPR Version:"+sibling.text());
                 Element aboutHeader = sibling.selectFirst("h2");
-                if (aboutHeader != null) {
+                Element buildTd = sibling.selectFirst("td:contains(Build)");
+                if (aboutHeader != null && buildTd!=null) {
                     String latestQPRRelease="";
-                    logger.log(Level.FINE, "Info on latest QPR Release found:"+(latestQPRRelease=aboutHeader.text() ));
+                    String latestBuilds="";
+                    logger.log(Level.FINE, "Info on latest QPR Release found:"+(latestQPRRelease=aboutHeader.text()));
+                    logger.log(Level.FINE, "Info on latest QPR Release found:"+(latestBuilds=buildTd.nextElementSibling().text()));
                     Pattern pattern = Pattern.compile("About\\s+(.*?)\\s*\\(.*?\\)");
                     Matcher matcher = pattern.matcher(latestQPRRelease);
                     if (matcher.find()) {
-                        logger.log(Level.INFO, "Latest QPR Beta Version Extracted:"+(releaseInfo= matcher.group(1).trim()));
+                        logger.log(Level.INFO, "Latest QPR Beta Version and builds extracted:"+(releaseInfo= matcher.group(1).trim()+" Builds->"+latestBuilds));
                         return releaseInfo;
                     }
                 }
@@ -178,6 +182,41 @@ public class WebScraper {
             logger.log(Level.SEVERE,"Could not find the latest QPR build");
         }else{
             logger.log(Level.SEVERE,"Release notes header not found on qpr release page");
+        }
+
+        return releaseInfo;
+    }
+
+    public static String getLatestAndroidBetaVersion() throws Exception{
+        String releaseInfo = "";
+        Document doc = Jsoup.connect("https://developer.android.com/about/versions/16/release-notes").get();
+        Element h1 = doc.select("h1:contains(Release notes)").first();
+
+        if (h1 != null) {
+            Element sibling = h1.nextElementSibling();
+
+            while (sibling != null) {
+                logger.log(Level.FINE,"Main Header found for Android Beta Version:"+sibling.text());
+                Element aboutHeader = sibling.selectFirst("h2");
+                Element buildTd = sibling.selectFirst("td:contains(Build)");
+                if (aboutHeader != null && buildTd != null) {
+                    String latestAndroidBetaRelease="";
+                    String latestBuilds="";
+                    logger.log(Level.FINE, "Info on latest Android Beta Release found:"+(latestAndroidBetaRelease=aboutHeader.text()));
+                    logger.log(Level.FINE, "Info on Builds found:"+(latestBuilds=buildTd.nextElementSibling().text()));
+                    Pattern pattern = Pattern.compile("About\\s+(.*)");
+                    Matcher matcher = pattern.matcher(latestAndroidBetaRelease);
+                    if (matcher.find()) {
+                        logger.log(Level.INFO, "Latest Android Beta Version and builds extracted:"+(releaseInfo= matcher.group(1).trim()+" Builds->"+latestBuilds));
+                        return releaseInfo;
+                    }
+                }
+                sibling = sibling.nextElementSibling();
+                logger.log(Level.INFO,"Sibling:"+sibling.attr("class"));
+            }
+            logger.log(Level.SEVERE,"Could not find the latest android beta build");
+        }else{
+            logger.log(Level.SEVERE,"Release notes header not found on android release page");
         }
 
         return releaseInfo;

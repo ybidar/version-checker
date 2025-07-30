@@ -6,4 +6,4 @@ version-checker.iml
 .idea/modules.xml
 
 # Output files
-/target
+target/

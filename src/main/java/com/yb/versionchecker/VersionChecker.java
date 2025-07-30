@@ -18,7 +18,7 @@ public class VersionChecker {
 
         if(latest.isDifferent(previous)){
             updateVersionInfo(latest);
-            logger.log(Level.INFO,"New Version Identified");
+            logger.log(Level.INFO,"New Version Identified. Please check and take appropriate action.");
         } else {
             logger.log(Level.INFO,"No version change.");
         }
