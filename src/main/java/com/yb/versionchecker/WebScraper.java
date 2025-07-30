@@ -8,6 +8,8 @@ import org.jsoup.select.Elements;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.yb.versionchecker.Notifier.sendNotification;
 import static com.yb.versionchecker.VersionInfo.getCurrentVersions;
@@ -21,7 +23,8 @@ public class WebScraper {
             String viOS = getLatestiOSVersion();
             String viPadOS = getLatestiPadOSVersion();
             String vAndroid = getLatestAndroidVersion();
-            String pixelBeta = "";
+            String android = "";
+            String pixelqprbeta = getLatestPixelBetaVersion();
             String pixelpatch = getLatestPixelMonthlyPatchVersion();
             String samsungpatch = getLatestSamsungPatch();
 
@@ -31,6 +34,7 @@ public class WebScraper {
             latestVersions.setVersion("android",vAndroid);
             latestVersions.setVersion("pixelpatch",pixelpatch);
             latestVersions.setVersion("samsungpatch",samsungpatch);
+            latestVersions.setVersion("pixelqprbeta",pixelqprbeta);
 
             return latestVersions;
 
@@ -137,11 +141,43 @@ public class WebScraper {
             if(firstLink!=null) {
                 String text = firstLink.text();
                 logger.log(Level.INFO,"Latest Samsung Monthly Patch available " + (releaseInfo=text));
-            }{
+            }else{
                 logger.log(Level.SEVERE,"Identified link on Samsung page is empty");
             }
         }else {
             logger.log(Level.SEVERE,"No links matching given locator found on Samsung page");
+        }
+
+        return releaseInfo;
+    }
+
+    public static String getLatestPixelBetaVersion() throws Exception{
+        String releaseInfo = "";
+        Document doc = Jsoup.connect("https://developer.android.com/about/versions/16/release-notes-qpr").get();
+        Element h1 = doc.select("h1:contains(Release notes)").first();
+
+        if (h1 != null) {
+            Element sibling = h1.nextElementSibling();
+
+            while (sibling != null) {
+                logger.log(Level.FINE,"Main Header found for Pixel QPR Version:"+sibling.text());
+                Element aboutHeader = sibling.selectFirst("h2");
+                if (aboutHeader != null) {
+                    String latestQPRRelease="";
+                    logger.log(Level.FINE, "Info on latest QPR Release found:"+(latestQPRRelease=aboutHeader.text() ));
+                    Pattern pattern = Pattern.compile("About\\s+(.*?)\\s*\\(.*?\\)");
+                    Matcher matcher = pattern.matcher(latestQPRRelease);
+                    if (matcher.find()) {
+                        logger.log(Level.INFO, "Latest QPR Beta Version Extracted:"+(releaseInfo= matcher.group(1).trim()));
+                        return releaseInfo;
+                    }
+                }
+                sibling = sibling.nextElementSibling();
+                logger.log(Level.INFO,"Sibling:"+sibling.attr("class"));
+            }
+            logger.log(Level.SEVERE,"Could not find the latest QPR build");
+        }else{
+            logger.log(Level.SEVERE,"Release notes header not found on qpr release page");
         }
 
         return releaseInfo;
